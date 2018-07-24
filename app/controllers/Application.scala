@@ -7,15 +7,17 @@ import play.api.Play.current
 
 import play.api.db._
 
+
+
 object Application extends Controller {
 
   def index = Action {
     Ok(views.html.index(null))
   }
 
-  def db = Action {
+  def tick = Action {
     var out = ""
-    val conn = DB.getConnection()
+    val conn = DB.getConnection("transactions")
     try {
       val stmt = conn.createStatement
 
@@ -30,6 +32,25 @@ object Application extends Controller {
     } finally {
       conn.close()
     }
+    println(out)
     Ok(out)
   }
+
+  def transactions = Action {
+    var out = ""
+    val conn = DB.getConnection("transactions")
+    try {
+      val stmt = conn.createStatement
+
+      val rs = stmt.executeQuery("SELECT transactionId, transactionDay, transactionAmount FROM trans_details")
+
+      while (rs.next) {
+        out += "Read from DB: " + rs.getString("transactionId") + " " + rs.getString("transactionDay") + " " + rs.getInt("transactionAmount")  + "\n"
+      }
+    } finally {
+      conn.close()
+    }
+    Ok(out)
+  }
+
 }
