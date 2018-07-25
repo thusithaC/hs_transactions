@@ -17,51 +17,46 @@ object Application extends Controller {
     Ok(views.html.index(null))
   }
 
-  def tick = Action {
-    var out = ""
-    val conn = DB.getConnection("transactions")
-    try {
-      val stmt = conn.createStatement
-
-      stmt.executeUpdate("CREATE TABLE IF NOT EXISTS ticks (tick timestamp)")
-      stmt.executeUpdate("INSERT INTO ticks VALUES (now())")
-
-      val rs = stmt.executeQuery("SELECT tick FROM ticks")
-
-      while (rs.next) {
-        out += "Read from DB: " + rs.getTimestamp("tick") + "\n"
-      }
-    } finally {
-      conn.close()
-    }
-    println(out)
-    Ok(out)
-  }
-
   def transactions = Action {
-    var out = ""
-    val conn = DB.getConnection("transactions")
-    try {
-      val stmt = conn.createStatement
+    println("Request received: transactions ")
+    val transactions = DataAccessObj.getAllTransactions()
+    if(!transactions.isEmpty) Ok(Json.toJson(transactions)) else NotFound
+  }
 
-      val rs = stmt.executeQuery("SELECT transactionId, transactionDay, transactionAmount FROM trans_details")
-
-      while (rs.next) {
-        out += "Read from DB: " + rs.getString("transactionId") + " " + rs.getString("transactionDay") + " " + rs.getInt("transactionAmount")  + "\n"
-      }
-    } finally {
-      conn.close()
+  def transactionByAccount(accountId : String) = Action {
+    println("Request received: transactionByAccount " + accountId)
+    if (null != accountId) {
+      val transactions = DataAccessObj.getTransactionsForAccount(accountId)
+      Ok(Json.toJson(transactions))
     }
-    Ok(out)
+    else {
+      NotFound
+    }
   }
 
-  def transactions_new = Action {
-    var transactions = DataAccessObj.getAllTransactions()
-    Ok(Json.toJson(transactions))
+  def allAccounts() = Action {
+    println("Request received: allAccounts ")
+    val accounts = DataAccessObj.getAllAccounts()
+    if(!accounts.isEmpty) Ok(Json.toJson(accounts)) else NotFound
   }
 
 
+  def transactionById(transactionId : String) = Action {
+    println("Request received: transactionById " + transactionId)
+    if (null != transactionId) {
+      val transaction = DataAccessObj.getTransactionsForId(transactionId)
+      if (null != transaction) Ok(Json.toJson(transaction)) else NotFound
+    }
+    else {
+      NotFound
+    }
+  }
 
-
+  def createNew = Action { request =>
+    println("Request to create object received + " + request.body.asText)
+    val json = request.body.asJson.get
+    println("Request body " + json)
+    if (DataAccessObj.insertTransactionJson(json)) Ok else BadRequest
+  }
 
 }

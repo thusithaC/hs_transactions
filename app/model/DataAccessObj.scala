@@ -1,11 +1,10 @@
 package model
 
-import java.sql.ResultSet
+import java.sql.{ResultSet, SQLException}
 
 import play.api.db._
 import play.api.libs.json._
 import play.api.Play.current
-
 
 import scala.annotation.tailrec
 
@@ -13,62 +12,118 @@ import scala.annotation.tailrec
   * Created by thusitha on 7/25/18.
   */
 object DataAccessObj {
+
+  val conn = DB.getConnection("transactions")
+
   def getTransactionsForAccount(account: String) : List[Transaction] = {
-    Nil
+    val query = s"SELECT transactionId, accountId, transactionDay, category, transactionAmount FROM trans_details WHERE accountId=\'${account}\'"
+    getItemsFromDatsource(query)
   }
 
 
   def getTransactionsForId(transactionId: String) : Transaction = {
-    null
+    val query = s"SELECT transactionId, accountId, transactionDay, category, transactionAmount FROM trans_details WHERE transactionId=\'$transactionId\'"
+    getItemFromDatsource(query)
   }
 
-  def getTransactionsForAccountDateRange(account: String, startDate:Int, endDate:Int) : Transaction = {
-    null
+  def getTransactionsForAccountDateRange(account: String, startDate:Int, endDate:Int) : List[Transaction] = {
+    val query = s"SELECT transactionId, accountId, transactionDay, category, transactionAmount FROM trans_details WHERE accountId=\'${account}\' AND  transactionDay BETWEEN ${startDate} AND ${endDate}"
+    getItemsFromDatsource(query)
   }
-
-  def insertTransactions(transactionId : String,
-                         accountId : String,
-                         transactionDay : Int,
-                         category: String,
-                         transactionAmount:BigDecimal) {
-    //insert
-  }
-
-  def insertTransactionJson(json:JsValue) = {
-    json.validate[Transaction] match {
-      case c: JsSuccess[Transaction] => {
-        val charge: Transaction = c.get
-        //log success
-      }
-      case e: JsError => {
-      // log error
-      }
-    }
-  }
-
 
   def getAllTransactions(): List[Transaction] = {
+    val query = "SELECT transactionId, accountId, transactionDay, category, transactionAmount FROM trans_details"
+    getItemsFromDatsource(query)
+  }
 
-    def createTransaction(rs:ResultSet) : Transaction = {
-      Transaction(rs.getString("transactionId"), rs.getString("accountId"), rs.getInt("transactionDay"), rs.getString("category"), rs.getBigDecimal("transactionAmount"))
-    }
+  def getAllAccounts() : List[String] = {
 
-    @tailrec
-    def getItemsFromResult(tList:List[Transaction], rs: ResultSet) : List[Transaction] = {
+    def getaccountsFromResult(accList:List[String], rs: ResultSet) : List[String] = {
       val hasNext = rs.next()
-      if (!hasNext) tList else getItemsFromResult(createTransaction(rs)::tList, rs)
+      if (!hasNext) accList else getaccountsFromResult(rs.getString("accountId")::accList, rs)
     }
+
+    val query = "SELECT distinct accountId FROM trans_details ORDER BY accountId"
 
     val conn = DB.getConnection("transactions")
-
     try {
       val stmt = conn.createStatement
-      val rs = stmt.executeQuery("SELECT transactionId, accountId, transactionDay, category, transactionAmount FROM trans_details")
+      val rs = stmt.executeQuery(query)
+      getaccountsFromResult(Nil, rs)
+    } finally {
+      conn.close()
+    }
+  }
+
+  def insertTransactionJson(json:JsValue) : Boolean= {
+    json.validate[Transaction] match {
+      case c: JsSuccess[Transaction] => {
+        val transaction: Transaction = c.get
+        val rowsAffected = insertTranactionIntoDb(transaction)
+        if (rowsAffected > 0){
+          println("successfully entered transaction " + transaction )
+          true
+        }
+        else {
+          println("Database Error couldnt enter transaction " + transaction)
+          false
+        }
+      }
+      case e: JsError => {
+        println("Error parsing transaction " +  json)
+        false
+      }
+    }
+  }
+
+  def insertTranactionIntoDb(transaction: Transaction) : Int = {
+    val conn = DB.getConnection("transactions")
+    try {
+      val stmt = conn.createStatement
+      val insertString = s"INSERT INTO trans_details (transactionId, accountId, transactionDay, category, transactionAmount) VALUES (\'${transaction.transactionId}\', \'${transaction.accountId}\', ${transaction.transactionDay}, \'${transaction.category}\', ${transaction.transactionAmount})"
+      println(insertString)
+      stmt.executeUpdate(insertString)
+    } finally {
+      conn.close()
+    }
+  }
+
+
+  private def createTransaction(rs:ResultSet) : Transaction = {
+    Transaction(rs.getString("transactionId"), rs.getString("accountId"), rs.getInt("transactionDay"), rs.getString("category"), rs.getBigDecimal("transactionAmount"))
+  }
+
+  @tailrec
+  private def getItemsFromResult(tList:List[Transaction], rs: ResultSet) : List[Transaction] = {
+    val hasNext = rs.next()
+    if (!hasNext) tList else getItemsFromResult(createTransaction(rs)::tList, rs)
+  }
+
+  private def getItemFromResult(rs: ResultSet) : Transaction = {
+    if (rs.first()) createTransaction(rs) else null
+  }
+
+
+  private def getItemsFromDatsource(query: String) : List[Transaction] = {
+    try {
+      val stmt = conn.createStatement
+      val rs = stmt.executeQuery(query)
       getItemsFromResult(Nil, rs)
     } finally {
       conn.close()
     }
   }
+
+  private def getItemFromDatsource(query: String) : Transaction = {
+    try {
+      val stmt = conn.createStatement
+      val rs = stmt.executeQuery(query)
+      getItemFromResult(rs)
+    } finally {
+      conn.close()
+    }
+  }
+
 
 
 

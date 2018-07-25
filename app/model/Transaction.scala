@@ -10,12 +10,7 @@ case class Transaction(transactionId : String,
                        accountId : String,
                        transactionDay : Int,
                        category: String,
-                       transactionAmount:BigDecimal) {
-
-
-
-
-}
+                       transactionAmount:BigDecimal)
 
 object Transaction {
   implicit val transactionReads: Reads[Transaction] = (
@@ -34,12 +29,6 @@ object Transaction {
       (JsPath \ "category").write[String] and
       (JsPath \ "transactionAmount").write[BigDecimal]
     )(unlift(Transaction.unapply))
-
-
-  //implicit val transactionWrites: Writes[Transaction] = Json.writes[Transaction]
-
-  //implicit val transactionWritesList: Writes[Seq[Transaction]] = Json.writes[Seq[Transaction]]
-
 
 }
 
