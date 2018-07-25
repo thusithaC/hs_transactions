@@ -1,11 +1,13 @@
 package controllers
 
+import model.{DataAccessObj, Transaction}
 import play.api._
 import play.api.mvc._
 import play.api.cache.Cache
 import play.api.Play.current
-
 import play.api.db._
+import play.api.libs.json._
+import model.Transaction._
 
 
 
@@ -52,5 +54,14 @@ object Application extends Controller {
     }
     Ok(out)
   }
+
+  def transactions_new = Action {
+    var transactions = DataAccessObj.getAllTransactions()
+    Ok(Json.toJson(transactions))
+  }
+
+
+
+
 
 }
