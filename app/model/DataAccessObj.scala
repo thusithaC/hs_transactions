@@ -13,8 +13,6 @@ import scala.annotation.tailrec
   */
 object DataAccessObj {
 
-  val conn = DB.getConnection("transactions")
-
   def getTransactionsForAccount(account: String) : List[Transaction] = {
     val query = s"SELECT transactionId, accountId, transactionDay, category, transactionAmount FROM trans_details WHERE accountId=\'${account}\'"
     getItemsFromDatsource(query)
@@ -105,6 +103,7 @@ object DataAccessObj {
 
 
   private def getItemsFromDatsource(query: String) : List[Transaction] = {
+    val conn = DB.getConnection("transactions")
     try {
       val stmt = conn.createStatement
       val rs = stmt.executeQuery(query)
@@ -115,6 +114,7 @@ object DataAccessObj {
   }
 
   private def getItemFromDatsource(query: String) : Transaction = {
+    val conn = DB.getConnection("transactions")
     try {
       val stmt = conn.createStatement
       val rs = stmt.executeQuery(query)
