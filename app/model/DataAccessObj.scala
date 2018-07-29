@@ -2,6 +2,7 @@ package model
 
 import java.sql.{ResultSet, SQLException}
 
+import play.api.Logger
 import play.api.db._
 import play.api.libs.json._
 import play.api.Play.current
@@ -59,16 +60,16 @@ object DataAccessObj {
         val transaction: Transaction = c.get
         val rowsAffected = insertTranactionIntoDb(transaction)
         if (rowsAffected > 0){
-          println("successfully entered transaction " + transaction )
+          Logger.info("successfully entered transaction " + transaction )
           true
         }
         else {
-          println("Database Error couldnt enter transaction " + transaction)
+          Logger.error("Database Error couldnt enter transaction " + transaction)
           false
         }
       }
       case e: JsError => {
-        println("Error parsing transaction " +  json)
+        Logger.error("Error parsing transaction " +  json)
         false
       }
     }

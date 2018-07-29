@@ -18,45 +18,59 @@ object Application extends Controller {
   }
 
   def transactions = Action {
-    println("Request received: transactions ")
+    Logger.info("Request received: transactions ")
     val transactions = DataAccessObj.getAllTransactions()
-    if(!transactions.isEmpty) Ok(Json.toJson(transactions)) else NotFound
+    if(!transactions.isEmpty)
+      Ok(Json.toJson(transactions))
+    else {
+      Logger.error("No result found")
+      NotFound
+    }
   }
 
   def transactionByAccount(accountId : String) = Action {
-    println("Request received: transactionByAccount " + accountId)
+    Logger.info("Request received: transactionByAccount " + accountId)
     if (null != accountId) {
       val transactions = DataAccessObj.getTransactionsForAccount(accountId)
       Ok(Json.toJson(transactions))
     }
     else {
+      Logger.error("No result found")
       NotFound
     }
   }
 
   def allAccounts() = Action {
-    println("Request received: allAccounts ")
+    Logger.info("Request received: allAccounts ")
     val accounts = DataAccessObj.getAllAccounts()
-    if(!accounts.isEmpty) Ok(Json.toJson(accounts)) else NotFound
+    if(!accounts.isEmpty) Ok(Json.toJson(accounts))
+    else{
+      Logger.error("No result found")
+      NotFound
+    }
   }
 
 
   def transactionById(transactionId : String) = Action {
-    println("Request received: transactionById " + transactionId)
+    Logger.info("Request received: transactionById " + transactionId)
     if (null != transactionId) {
       val transaction = DataAccessObj.getTransactionsForId(transactionId)
       if (null != transaction) Ok(Json.toJson(transaction)) else NotFound
     }
     else {
+      Logger.error("No result found")
       NotFound
     }
   }
 
   def createNew = Action { request =>
-    println("Request to create object received + " + request.body.asText)
+    Logger.info("Request to create object received + " + request.body.asText)
     val json = request.body.asJson.get
-    println("Request body " + json)
-    if (DataAccessObj.insertTransactionJson(json)) Ok else BadRequest
+    if (DataAccessObj.insertTransactionJson(json)) Ok
+    else {
+      Logger.error("Bad request")
+      BadRequest
+    }
   }
 
 }
